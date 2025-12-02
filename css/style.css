@@ -1,0 +1,91 @@
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #000;
+    font-family: 'Azeret Mono', monospace;
+    cursor: none; /* Hide default cursor */
+}
+
+#canvas-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+#ui-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none; /* Let clicks pass through to canvas */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.title-container {
+    text-align: center;
+    color: #e3e4ff;
+    mix-blend-mode: overlay;
+    transition: opacity 0.5s ease;
+}
+
+h1 {
+    font-family: 'Doto', sans-serif;
+    font-size: 4rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    margin: 0;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
+
+/* Custom Cursor */
+#cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.wind-vane {
+    position: absolute;
+    /* 
+       鼠标尖尖在SVG的右上角 (Top-Right)。
+       #cursor 容器的 (0,0) 就是鼠标的真实位置。
+       我们需要把 .wind-vane 的右上角对准 (0,0)。
+       所以用 translate(-100%, 0%) 把整个图向左移动一个宽度。
+    */
+    top: 0;
+    left: 0;
+    width: 24px;  /* 调小尺寸 */
+    height: 24px; /* 调小尺寸 */
+    background-image: url('../assets/cursor.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: top right; /* 确保图片的右上角对齐 */
+    background-color: transparent;
+    
+    /* 将整个元素向左移动，使右边缘对准鼠标位置 */
+    transform: translate(-100%, 0%); 
+    
+    /* 旋转时以右上角为中心 */
+    transform-origin: 100% 0%;
+    
+    /* 发光效果 */
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
