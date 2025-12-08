@@ -23,8 +23,79 @@
     <div id="canvas-container"></div>
     
     <div id="ui-layer">
-        <div class="title-container">
+        <nav id="main-nav">
+            <div class="nav-left">
+                <a href="#" id="nav-about" class="nav-link">Anylight</a>
+            </div>
+            <div class="nav-center">
+                <a href="#" id="nav-field" class="nav-link active">Field</a>
+                <a href="#" id="nav-gallery" class="nav-link">Gallery</a>
+                <a href="#" id="nav-search" class="nav-link">Search</a>
+            </div>
+            <div class="nav-right">
+                <a href="#" id="nav-menu" class="nav-link">Menu</a>
+            </div>
+        </nav>
+
+        <div class="title-container" id="landing-title">
             <h1>WHERE DO WE GO NEXT?</h1>
+        </div>
+
+        <!-- Views -->
+        <div id="gallery-view" class="view-container hidden">
+            <h2>Gallery</h2>
+            <div class="gallery-grid">
+                <!-- Content will be populated dynamically or static placeholders -->
+                <div class="gallery-item">Work 01</div>
+                <div class="gallery-item">Work 02</div>
+                <div class="gallery-item">Work 03</div>
+                <div class="gallery-item">Work 04</div>
+            </div>
+        </div>
+
+        <div id="about-view" class="view-container hidden">
+            <div class="about-content">
+                <h2>Anylight</h2>
+                <p>Creative Developer & Interaction Designer.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlays -->
+    <div id="search-overlay" class="overlay hidden">
+        <div class="search-container">
+            <input type="text" id="search-input" placeholder="Search works...">
+            <button id="search-close">×</button>
+        </div>
+    </div>
+
+    <div id="side-menu" class="side-panel">
+        <div class="menu-content">
+            <a href="#" class="menu-item" id="menu-home">Home</a>
+            <a href="#" class="menu-item" id="menu-about">About</a>
+            <a href="#" class="menu-item" id="menu-contact">Contact</a>
+            <a href="#" class="menu-item" id="menu-find">Find Yourself</a>
+            <a href="#" class="menu-item close-item" id="menu-close">Close</a>
+        </div>
+    </div>
+
+    <!-- Contact Overlay -->
+    <div id="contact-overlay" class="overlay hidden">
+        <div class="contact-container">
+            <div class="contact-header">
+                <h2>Contact</h2>
+            </div>
+            <div class="contact-content">
+                <div class="contact-group">
+                    <span class="label">Email</span>
+                    <a href="mailto:anylight@example.com" class="value">anylight@example.com</a>
+                </div>
+                <div class="contact-group">
+                    <span class="label">Social</span>
+                    <span class="value">@anylight</span>
+                </div>
+            </div>
+            <button id="contact-close">Close</button>
         </div>
     </div>
 

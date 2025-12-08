@@ -43,7 +43,8 @@ const PROJECTS = {
 
 // --- State ---
 const state = {
-    phase: 'landing', // landing, shattering, field, project
+    view: 'field', // field, gallery, about, search
+    fieldPhase: 'landing', // landing, shattering, active, project
     mouse: new THREE.Vector2(),
     targetMouse: new THREE.Vector2(),
     raycaster: new THREE.Raycaster(),
@@ -110,6 +111,7 @@ updateBackgroundSize();
 
 // --- Objects ---
 let keywordGroup = new THREE.Group();
+keywordGroup.visible = false; // Start hidden, will be shown when entering 'active' phase
 scene.add(keywordGroup);
 let particles = null;
 
@@ -144,16 +146,14 @@ function createTextSprite(text) {
     const texture = new THREE.CanvasTexture(canvas);
     
     // Use Mesh instead of Sprite for better raycasting (rectangular hit area)
-    const material = new THREE.MeshBasicMaterial({ 
-        map: texture, 
+    const material = new THREE.MeshBasicMaterial({
+        map: texture,
         transparent: true,
-        opacity: 0,
+        opacity: 0, // Start invisible
         color: 0xffffff,
         depthTest: false,
         side: THREE.DoubleSide // Visible from both sides
-    });
-    
-    const scaleFactor = 0.005;
+    });    const scaleFactor = 0.005;
     const geometry = new THREE.PlaneGeometry(canvas.width * scaleFactor, canvas.height * scaleFactor);
     const mesh = new THREE.Mesh(geometry, material);
     
@@ -258,7 +258,7 @@ function onMouseMove(event) {
     }
 
     // --- Hover Logic ---
-    if (state.phase === 'field') {
+    if (state.view === 'field' && state.fieldPhase === 'active') {
         // Raycast for keywords
         state.raycaster.setFromCamera(state.mouse, camera);
         const intersects = state.raycaster.intersectObjects(keywordGroup.children);
@@ -299,24 +299,40 @@ function onMouseMove(event) {
 
 
 function onClick(event) {
-    if (state.phase === 'landing') {
+    // Only allow interactions if we are in the Field View
+    if (state.view !== 'field') return;
+
+    // Prevent interaction if clicking on UI elements (Nav, etc.)
+    // Check if the click target is within the UI layer but NOT the canvas
+    // Actually, the UI layer covers everything. We need to check if the target is a specific UI element.
+    // But wait, pointer-events: none is on #ui-layer, so clicks pass through to canvas unless they hit a child with pointer-events: auto.
+    // If the user clicks a nav link, the event listener on the link handles it.
+    // However, the click event might propagate to the window.
+    // Let's check the event target.
+    if (event.target.closest('.nav-link') || event.target.closest('.menu-item') || event.target.closest('.search-container')) {
+        return;
+    }
+
+    if (state.fieldPhase === 'landing') {
         // Shatter Title
-        const title = document.querySelector('.title-container');
-        title.classList.add('hidden');
+        // const title = document.querySelector('.title-container'); // Handled by updateVisibility now
+        // title.classList.add('hidden');
         
         createExplosion(new THREE.Vector3(0, 0, 0));
-        state.phase = 'shattering';
+        state.fieldPhase = 'shattering';
+        updateVisibility(); // Hide title immediately
         
         // Transition to Field
         setTimeout(() => {
-            state.phase = 'field';
+            state.fieldPhase = 'active';
+            updateVisibility(); // Show keywords
             // Fade in keywords
             keywordGroup.children.forEach(mesh => {
                 gsap.to(mesh.material, { opacity: 0.6, duration: 2 });
             });
         }, 1000);
         
-    } else if (state.phase === 'field') {
+    } else if (state.fieldPhase === 'active') {
         // Raycast for keywords
         state.raycaster.setFromCamera(state.mouse, camera);
         const intersects = state.raycaster.intersectObjects(keywordGroup.children);
@@ -402,7 +418,7 @@ function rearrangeKeywords(excludeObject) {
 }
 
 function formProject() {
-    state.phase = 'project';
+    state.fieldPhase = 'project';
     
     // Fade out uncollected
     keywordGroup.children.forEach(mesh => {
@@ -442,6 +458,216 @@ function formProject() {
     });
 }
 
+// --- UI Logic ---
+const ui = {
+    nav: {
+        about: document.getElementById('nav-about'),
+        field: document.getElementById('nav-field'),
+        gallery: document.getElementById('nav-gallery'),
+        search: document.getElementById('nav-search'),
+        menu: document.getElementById('nav-menu')
+    },
+    views: {
+        field: document.getElementById('canvas-container'), // Field is the canvas
+        gallery: document.getElementById('gallery-view'),
+        about: document.getElementById('about-view')
+    },
+    overlays: {
+        search: document.getElementById('search-overlay'),
+        menu: document.getElementById('side-menu'),
+        contact: document.getElementById('contact-overlay')
+    },
+    menuItems: {
+        home: document.getElementById('menu-home'),
+        about: document.getElementById('menu-about'),
+        find: document.getElementById('menu-find'),
+        contact: document.getElementById('menu-contact'),
+        close: document.getElementById('menu-close')
+    },
+    inputs: {
+        search: document.getElementById('search-input'),
+        searchClose: document.getElementById('search-close'),
+        contactClose: document.getElementById('contact-close')
+    },
+    containers: {
+        canvas: document.getElementById('canvas-container'),
+        uiLayer: document.getElementById('ui-layer')
+    }
+};
+
+function updateVisibility() {
+    const landingTitle = document.getElementById('landing-title');
+    
+    // 1. Handle HTML Title Visibility
+    if (state.view === 'field' && state.fieldPhase === 'landing') {
+        landingTitle.style.opacity = '1';
+        landingTitle.style.pointerEvents = 'auto';
+    } else {
+        landingTitle.style.opacity = '0';
+        landingTitle.style.pointerEvents = 'none';
+    }
+
+    // 2. Handle 3D Keywords Visibility
+    // Keywords should only be visible if we are in Field View AND Field Phase is active (or project)
+    const showKeywords = (state.view === 'field' && (state.fieldPhase === 'active' || state.fieldPhase === 'project'));
+    
+    if (keywordGroup) {
+        keywordGroup.visible = showKeywords;
+    }
+    
+    // 3. Handle Particles Visibility
+    // Particles are transient, but if we switch away, maybe hide them?
+    if (particles) {
+        particles.visible = (state.view === 'field');
+    }
+}
+
+function switchView(viewName) {
+    state.view = viewName;
+
+    // Update Nav Active State
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    if (ui.nav[viewName]) ui.nav[viewName].classList.add('active');
+
+    // Hide all views first
+    ui.views.gallery.classList.add('hidden');
+    ui.views.about.classList.add('hidden');
+    
+    // Reset Canvas Blur
+    ui.containers.canvas.style.filter = 'none';
+    
+    // Handle specific views
+    if (viewName === 'field') {
+        // Show Canvas
+        ui.containers.canvas.style.opacity = '1';
+        ui.containers.canvas.style.pointerEvents = 'auto';
+        // Don't change fieldPhase here, just resume
+    } else if (viewName === 'gallery') {
+        // Hide Canvas (or fade it)
+        ui.containers.canvas.style.opacity = '0.5'; // Keep it visible but dim
+        ui.containers.canvas.style.pointerEvents = 'none';
+        ui.views.gallery.classList.remove('hidden');
+    } else if (viewName === 'about') {
+        ui.containers.canvas.style.opacity = '0.5';
+        ui.containers.canvas.style.pointerEvents = 'none';
+        ui.views.about.classList.remove('hidden');
+    }
+    
+    updateVisibility();
+}
+
+// Back Button Listener - REMOVED
+// document.getElementById('about-back').addEventListener('click', () => {
+//     switchView('field');
+// });
+
+// Nav Listeners
+ui.nav.about.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (state.view === 'about') {
+        // If already on About page, go back to Field
+        switchView('field');
+    } else {
+        switchView('about');
+    }
+});
+
+ui.nav.field.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchView('field');
+});
+
+ui.nav.gallery.addEventListener('click', (e) => {
+    e.preventDefault();
+    switchView('gallery');
+});
+
+// Search Listener
+ui.nav.search.addEventListener('click', (e) => {
+    e.preventDefault();
+    ui.overlays.search.classList.remove('hidden');
+    ui.containers.canvas.style.filter = 'blur(10px)'; // Blur the background
+    ui.containers.uiLayer.style.filter = 'blur(10px)'; // Blur the UI
+    ui.inputs.search.focus();
+});
+
+ui.inputs.searchClose.addEventListener('click', () => {
+    ui.overlays.search.classList.add('hidden');
+    ui.containers.canvas.style.filter = 'none'; // Remove blur
+    ui.containers.uiLayer.style.filter = 'none';
+});
+
+// Close search on Escape key
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !ui.overlays.search.classList.contains('hidden')) {
+        ui.overlays.search.classList.add('hidden');
+        ui.containers.canvas.style.filter = 'none';
+        ui.containers.uiLayer.style.filter = 'none';
+    }
+});
+
+// Menu Listener
+ui.nav.menu.addEventListener('click', (e) => {
+    e.preventDefault();
+    ui.overlays.menu.classList.toggle('open');
+});
+
+// Menu Items Logic
+ui.menuItems.home.addEventListener('click', (e) => {
+    e.preventDefault();
+    ui.overlays.menu.classList.remove('open');
+    
+    // Reset to Field Landing
+    switchView('field');
+    state.fieldPhase = 'landing';
+    state.collectedKeywords = []; // Clear collected
+    
+    // Reset Keywords
+    keywordGroup.children.forEach(mesh => {
+        mesh.userData.selected = false;
+        mesh.userData.hovered = false;
+        mesh.material.opacity = 0; // Hide them
+        mesh.material.color.setHex(0xffffff);
+        mesh.position.copy(mesh.userData.originalPos);
+    });
+    
+    updateVisibility();
+});
+
+ui.menuItems.about.addEventListener('click', (e) => {
+    e.preventDefault();
+    ui.overlays.menu.classList.remove('open');
+    switchView('about');
+});
+
+ui.menuItems.find.addEventListener('click', (e) => {
+    e.preventDefault();
+    // Placeholder for "Find Yourself"
+    console.log("Find Yourself clicked");
+});
+
+ui.menuItems.contact.addEventListener('click', (e) => {
+    e.preventDefault();
+    ui.overlays.menu.classList.remove('open');
+    ui.overlays.contact.classList.remove('hidden');
+});
+
+ui.menuItems.close.addEventListener('click', (e) => {
+    e.preventDefault();
+    ui.overlays.menu.classList.remove('open');
+});
+
+ui.inputs.contactClose.addEventListener('click', () => {
+    ui.overlays.contact.classList.add('hidden');
+});
+
+// Close menu when clicking outside (optional, but good UX)
+document.addEventListener('click', (e) => {
+    if (!ui.overlays.menu.contains(e.target) && e.target !== ui.nav.menu) {
+        ui.overlays.menu.classList.remove('open');
+    }
+});
+
 // --- Animation Loop ---
 
 function animate() {
@@ -450,7 +676,8 @@ function animate() {
     const time = performance.now() * 0.001;
     
     // WASD Navigation (Smooth with Inertia)
-    if (state.phase === 'field' || state.phase === 'project') {
+    // Only active if we are in Field View AND (Field Phase is active or project)
+    if (state.view === 'field' && (state.fieldPhase === 'active' || state.fieldPhase === 'project')) {
         const accel = 0.008;
         const rotAccel = 0.0015; // Reduced from 0.003 for less sensitive rotation
         const friction = 0.96; // Back to normal friction for responsive controls
@@ -481,7 +708,7 @@ function animate() {
     bgMaterial.uniforms.uMouse.value.lerp(state.targetMouse, 0.05);
     
     // Update Particles (Explosion)
-    if (particles) {
+    if (particles && particles.visible) {
         const positions = particles.geometry.attributes.position.array;
         const vels = particles.userData.velocities;
         
@@ -503,8 +730,9 @@ function animate() {
         }
     }
     
-    // Update Keywords (Field Phase AND Project Phase)
-    if (state.phase === 'field' || state.phase === 'project') {
+    // Update Keywords (Field Phase, Project Phase, Gallery, About)
+    // Only update if visible
+    if (keywordGroup && keywordGroup.visible) {
         // Get camera's forward direction for proper Z wrapping
         const cameraDirection = new THREE.Vector3();
         camera.getWorldDirection(cameraDirection);
@@ -611,6 +839,9 @@ window.addEventListener('keyup', (e) => {
     const key = e.key.toLowerCase();
     if (state.keys.hasOwnProperty(key)) state.keys[key] = false;
 });
+
+// Initialize visibility state on load
+updateVisibility();
 
 // Start
 animate();
