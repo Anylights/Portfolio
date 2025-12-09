@@ -1156,6 +1156,7 @@ function transitionToProjectDetail(project, nameOverlay, blurOverlay) {
     // This function is now replaced by scroll-driven transition
     // Keeping for compatibility but redirecting to new system
     setupScrollDrivenTransition(project, nameOverlay, blurOverlay);
+}
 
 // --- Project Detail View ---
 
