@@ -926,10 +926,9 @@ function showProjectNameWithParticles(project, blurOverlay) {
 }
 
 function transitionToProjectDetail(project, nameOverlay, blurOverlay) {
-    // Get target position (where title will be in detail view)
+    // Target position: top-left corner (like jessiewu-archive style)
     const targetTop = '140px';
-    const targetLeft = '50%';
-    const targetScale = 0.4;
+    const targetLeft = '60px';
     
     // Prepare project detail view (hidden but populated)
     const detailView = document.getElementById('project-detail-view');
@@ -949,15 +948,27 @@ function transitionToProjectDetail(project, nameOverlay, blurOverlay) {
     // Make detail title invisible initially (we'll use the animated one)
     titleEl.style.opacity = '0';
     
-    // Animate title to its final position
+    // Get the h1 element inside nameOverlay for font-size animation
+    const titleReveal = nameOverlay.querySelector('.project-title-reveal');
+    
+    // Animate title to top-left corner with smooth easing
+    // First, reset the transform so we can use top/left directly
     gsap.to(nameOverlay, {
         top: targetTop,
         left: targetLeft,
-        xPercent: -50,
+        xPercent: 0,
         yPercent: 0,
-        scale: targetScale,
-        duration: 1,
-        ease: "power2.inOut"
+        x: 0,
+        y: 0,
+        duration: 1.2,
+        ease: "power3.inOut"
+    });
+    
+    // Animate font-size separately for smoother text scaling
+    gsap.to(titleReveal, {
+        fontSize: '3rem',
+        duration: 1.2,
+        ease: "power3.inOut"
     });
     
     // Fade in the rest of the detail view
@@ -1010,7 +1021,7 @@ function transitionToProjectDetail(project, nameOverlay, blurOverlay) {
                 }
             });
         }, 600);
-    }, 800);
+    }, 1000);
 }
 
 // --- Project Detail View ---

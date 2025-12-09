@@ -698,8 +698,9 @@ h1 {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 53;
-    text-align: center;
     pointer-events: none;
+    /* Allow transform-origin for smooth corner animation */
+    transform-origin: left top;
 }
 
 .project-title-reveal {
@@ -707,11 +708,13 @@ h1 {
     font-size: 8vw;
     color: #e3e4ff;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.05em;
     margin: 0;
     text-shadow: 0 0 60px rgba(227, 228, 255, 0.6),
                  0 0 120px rgba(227, 228, 255, 0.3);
     white-space: nowrap;
+    /* Smooth font-size transition */
+    transition: font-size 1.2s cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 /* ========================================
@@ -775,11 +778,12 @@ h1 {
 
 .project-detail-header {
     margin-bottom: 3rem;
+    text-align: left;
 }
 
 .project-detail-title {
     font-family: 'Doto', sans-serif;
-    font-size: 6vw;
+    font-size: 3rem;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
